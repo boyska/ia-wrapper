@@ -8,6 +8,8 @@ from fnmatch import fnmatch
 import logging
 
 import requests.sessions
+from requests.adapters import HTTPAdapter
+
 from requests.exceptions import HTTPError
 from jsonpatch import make_patch
 from clint.textui import progress
@@ -67,6 +69,9 @@ class Item(object):
         self.session = session.ArchiveSession(config)
         self.protocol = 'https:' if self.session.secure else 'http:'
         self.http_session = requests.sessions.Session()
+        self.http_session.mount('%s//' % self.protocol,
+                                HTTPAdapter(max_retries=1))
+
         self.http_session.cookies = self.session.cookies
         self.identifier = identifier
 
@@ -405,7 +410,7 @@ class Item(object):
 
         # require the Content-MD5 header when delete is True.
         if verify or delete:
-            headers['Content-MD5'] = md5_sum 
+            headers['Content-MD5'] = md5_sum
         if verbose:
             try:
                 chunk_size = 1048576
@@ -566,7 +571,7 @@ class File(object):
         for key in _file:
             setattr(self, key, _file[key])
         base_url = '{protocol}//archive.org/download/{identifier}'.format(**item.__dict__)
-        self.url = '{base_url}/{name}'.format(base_url=base_url, 
+        self.url = '{base_url}/{name}'.format(base_url=base_url,
                                               name=name.encode('utf-8'))
 
     # __repr__()
